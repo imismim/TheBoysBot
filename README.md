@@ -4,6 +4,9 @@ Telegram-бот: слухає повідомлення в групі, і якщ�
 (`https://vt.tiktok.com/ZSbwWoaWA`), відповідає тим самим посиланням через `kktiktok.com`
 (`https://vt.kktiktok.com/ZSbwWoaWA`), щоб відео нормально вбудовувалося в Telegram.
 
+Також щопонеділка і щосереди о 14:55 (Київ) пише в групу нагадування про пару.
+Для цього потрібен config var `GROUP_CHAT_ID` — дізнатися його можна командою `/chatid` у групі.
+
 ## 1. Створити бота
 1. У [@BotFather](https://t.me/BotFather): `/newbot` → отримати токен.
 2. **Обов'язково** `/setprivacy` → вибрати бота → `Disable`.
@@ -24,6 +27,7 @@ python bot.py
 git init && git add . && git commit -m "init"
 heroku create the-boys-bot
 heroku config:set BOT_TOKEN=xxx
+heroku config:set GROUP_CHAT_ID=-100xxxxxxxxxx
 git push heroku main
 heroku ps:scale web=0 worker=1
 heroku logs --tail
