@@ -16,8 +16,9 @@ logging.basicConfig(
 logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
-TIKTOK_RE = re.compile(
-    r"(?<![\w.-])((?:https?://)?(?:[\w-]+\.)*)tiktok\.com(/\S*)?",
+# tiktok.com / instagram.com з будь-яким сабдоменом, але не вже виправлені kk*-посилання
+LINK_RE = re.compile(
+    r"(?<![\w.-])((?:https?://)?(?:[\w-]+\.)*)(tiktok|instagram)\.com(?![\w-]|\.[\w-])(/\S*)?",
     re.IGNORECASE,
 )
 
@@ -28,11 +29,11 @@ REMINDER_DAYS = (1, 3)  # PTB: 0 = неділя, тож 1 = понеділок, 
 
 
 def convert(url: str) -> str:
-    return TIKTOK_RE.sub(lambda m: f"{m.group(1)}kktiktok.com{m.group(2) or ''}", url)
+    return LINK_RE.sub(lambda m: f"{m.group(1)}kk{m.group(2)}.com{m.group(3) or ''}", url)
 
 
 def extract_links(text: str) -> list[str]:
-    return [m.group(0) for m in TIKTOK_RE.finditer(text)]
+    return [m.group(0) for m in LINK_RE.finditer(text)]
 
 
 async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

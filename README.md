@@ -1,8 +1,8 @@
 # theBoysbot
 
-Telegram-бот: слухає повідомлення в групі, і якщо хтось скинув TikTok-посилання
+Telegram-бот: слухає повідомлення в групі, і якщо хтось скинув TikTok- або Instagram-посилання
 (`https://vt.tiktok.com/ZSbwWoaWA`), відповідає тим самим посиланням через `kktiktok.com`
-(`https://vt.kktiktok.com/ZSbwWoaWA`), щоб відео нормально вбудовувалося в Telegram.
+(`https://vt.kktiktok.com/ZSbwWoaWA`, `instagram.com` → `kkinstagram.com`), щоб відео нормально вбудовувалося в Telegram.
 
 Також щопонеділка і щосереди о 14:55 (Київ) пише в групу нагадування про пару.
 Для цього потрібен config var `GROUP_CHAT_ID` — дізнатися його можна командою `/chatid` у групі.
