@@ -30,6 +30,12 @@ LINK_RE = re.compile(
     re.IGNORECASE,
 )
 
+# YouTube Shorts → koutube.com (звичайні відео Telegram і так вбудовує сам)
+YT_SHORTS_RE = re.compile(
+    r"(?<![\w.-])(?:https?://)?(?:www\.|m\.)?youtube\.com/shorts/([\w-]{11})(?![\w-])\S*",
+    re.IGNORECASE,
+)
+
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 REMINDER_TEXT = "Пара в сеня почалася, не забудьте зайти друзі"
 REMINDER_TIME = datetime.time(14, 55, tzinfo=KYIV_TZ)
@@ -43,12 +49,17 @@ IN_CHAT = {
 }
 
 
-def convert(url: str) -> str:
-    return LINK_RE.sub(lambda m: f"{m.group(1)}kk{m.group(2)}.com{m.group(3) or ''}", url)
-
-
-def extract_links(text: str) -> list[str]:
-    return [m.group(0) for m in LINK_RE.finditer(text)]
+def fix_links(text: str) -> list[str]:
+    """Повертає виправлені посилання в тому порядку, в якому вони йдуть у тексті."""
+    found = [
+        (m.start(), f"{m.group(1)}kk{m.group(2)}.com{m.group(3) or ''}")
+        for m in LINK_RE.finditer(text)
+    ]
+    found += [
+        (m.start(), f"https://koutube.com/shorts/{m.group(1)}")
+        for m in YT_SHORTS_RE.finditer(text)
+    ]
+    return [link for _, link in sorted(found)]
 
 
 async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -57,13 +68,13 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
 
     text = msg.text or msg.caption or ""
-    links = extract_links(text)
+    links = fix_links(text)
 
     for entity in (msg.entities or msg.caption_entities or ()):
         if entity.type == MessageEntityType.TEXT_LINK and entity.url:
-            links.extend(extract_links(entity.url))
+            links.extend(fix_links(entity.url))
 
-    fixed = list(dict.fromkeys(convert(link) for link in links))
+    fixed = list(dict.fromkeys(links))
     if not fixed:
         return
 
