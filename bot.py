@@ -6,8 +6,16 @@ from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.constants import MessageEntityType
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.constants import ChatMemberStatus, ChatType, MessageEntityType
+from telegram.error import TelegramError
+from telegram.ext import (
+    Application,
+    ChatMemberHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -26,6 +34,13 @@ KYIV_TZ = ZoneInfo("Europe/Kyiv")
 REMINDER_TEXT = "Пара в сеня почалася, не забудьте зайти друзі"
 REMINDER_TIME = datetime.time(14, 55, tzinfo=KYIV_TZ)
 REMINDER_DAYS = (1, 3)  # PTB: 0 = неділя, тож 1 = понеділок, 3 = середа
+
+IN_CHAT = {
+    ChatMemberStatus.MEMBER,
+    ChatMemberStatus.ADMINISTRATOR,
+    ChatMemberStatus.OWNER,
+    ChatMemberStatus.RESTRICTED,
+}
 
 
 def convert(url: str) -> str:
@@ -60,6 +75,40 @@ async def send_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     log.info("Reminder sent to %s", context.job.chat_id)
 
 
+async def on_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    cmu = update.my_chat_member
+    if cmu.chat.type == ChatType.PRIVATE:
+        return
+
+    old, new = cmu.old_chat_member.status, cmu.new_chat_member.status
+    if old not in IN_CHAT and new in IN_CHAT:
+        action = "➕ Бота додали в групу"
+    elif old in IN_CHAT and new not in IN_CHAT:
+        action = "➖ Бота видалили з групи"
+    elif new == ChatMemberStatus.ADMINISTRATOR and old != new:
+        action = "⭐ Бота зробили адміном"
+    elif old == ChatMemberStatus.ADMINISTRATOR and old != new:
+        action = "Бота зняли з адміна"
+    else:
+        return
+
+    who = cmu.from_user
+    username = f" (@{who.username})" if who.username else ""
+    text = (
+        f"{action}\n"
+        f"Хто: {who.full_name}{username}, id {who.id}\n"
+        f"Група: {cmu.chat.title}, id {cmu.chat.id}"
+    )
+    log.info(text.replace("\n", " | "))
+
+    admin_id = context.bot_data.get("admin_id")
+    if admin_id:
+        try:
+            await context.bot.send_message(chat_id=admin_id, text=text)
+        except TelegramError as e:
+            log.warning("Can't notify admin %s: %s", admin_id, e)
+
+
 async def chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.effective_message.reply_text(f"chat_id: {update.effective_chat.id}")
 
@@ -78,6 +127,13 @@ def main() -> None:
         )
     )
     app.add_handler(CommandHandler("chatid", chat_id))
+    app.add_handler(ChatMemberHandler(on_my_chat_member, ChatMemberHandler.MY_CHAT_MEMBER))
+
+    admin_id = os.environ.get("ADMIN_ID")
+    if admin_id:
+        app.bot_data["admin_id"] = int(admin_id)
+    else:
+        log.warning("ADMIN_ID is not set, join notifications go to logs only")
 
     group_chat_id = os.environ.get("GROUP_CHAT_ID")
     if group_chat_id:

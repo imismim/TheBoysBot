@@ -33,3 +33,10 @@ heroku ps:scale web=0 worker=1
 heroku logs --tail
 ```
 Бот працює через polling, тому потрібен **worker**-дайно, а не web (див. `Procfile`).
+
+## Сповіщення, хто додав бота
+Коли бота додають/видаляють з групи чи роблять адміном, він пише про це в особисті власнику.
+Напишіть боту в приват `/chatid` — це ваш ID, потім:
+```bash
+heroku config:set ADMIN_ID=<ваш id> -a theboysbot
+```
