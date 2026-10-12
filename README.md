@@ -15,7 +15,8 @@ Telegram-бот: слухає повідомлення в групі, і якщ�
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-BOT_TOKEN=xxx python bot.py
+cp .env.example .env   # і вписати токен у .env
+python bot.py
 ```
 
 ## 3. Деплой на Heroku

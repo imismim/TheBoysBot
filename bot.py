@@ -2,6 +2,7 @@ import logging
 import os
 import re
 
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.constants import MessageEntityType
 from telegram.ext import Application, ContextTypes, MessageHandler, filters
@@ -47,6 +48,7 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 def main() -> None:
+    load_dotenv()
     token = os.environ.get("BOT_TOKEN")
     if not token:
         raise SystemExit("BOT_TOKEN env variable is not set")
